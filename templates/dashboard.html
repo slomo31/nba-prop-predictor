@@ -393,6 +393,32 @@
             picks.classList.toggle('expanded');
         }
 
+        
+        function generatePredictions() {
+            const btn = event.target.closest('button');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span>⏳</span><span>Generating... (may take 2-3 min)</span>';
+            btn.disabled = true;
+            
+            fetch('/generate')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert('✓ ' + data.message + ' Refreshing...');
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.message);
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    alert('Error: ' + error);
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                });
+        }
+
         function refreshData() {
             location.reload();
         }
