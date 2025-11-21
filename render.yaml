@@ -1,13 +1,13 @@
 services:
   - type: web
     name: nba-prop-predictor
-    env: python
+    runtime: python
     region: oregon
     plan: free
     buildCommand: pip install --upgrade pip && pip install -r requirements.txt
     startCommand: gunicorn dashboard:app --bind 0.0.0.0:$PORT --timeout 120 --workers 1
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.0
+        value: 3.11.4
       - key: ODDS_API_KEY
         value: a03349ac7178eb60a825d19bd27014ce
