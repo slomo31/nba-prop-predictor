@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NBA Prop Predictor Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .value {
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .games-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .game-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+
+        .game-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .game-header {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .game-header:hover {
+            background: linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%);
+        }
+
+        .game-info {
+            flex: 1;
+        }
+
+        .game-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .game-meta {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .game-stats {
+            text-align: right;
+        }
+
+        .game-stats .picks-count {
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+
+        .game-stats .confidence {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .expand-icon {
+            font-size: 1.5em;
+            transition: transform 0.3s;
+            margin-left: 20px;
+        }
+
+        .expand-icon.expanded {
+            transform: rotate(180deg);
+        }
+
+        .game-picks {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .game-picks.expanded {
+            max-height: 5000px;
+            transition: max-height 0.5s ease-in;
+        }
+
+        .pick-item {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .pick-item:last-child {
+            border-bottom: none;
+        }
+
+        .pick-player {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .pick-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .pick-stat {
+            background: #f7f7f7;
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .pick-stat label {
+            font-size: 0.85em;
+            color: #666;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .pick-stat value {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .recommendation {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .recommendation .rec-line {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .recommendation .rec-confidence {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .analysis {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .benefits {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+        }
+
+        .benefit {
+            flex: 1;
+            background: #e8f5e9;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .benefit .benefit-value {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #2e7d32;
+        }
+
+        .benefit .benefit-label {
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .no-picks {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            color: #666;
+        }
+
+        .refresh-btn {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 1em;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+
+        .refresh-btn:hover {
+            transform: scale(1.05);
+        }
+
+        @media (max-width: 768px) {
+            .game-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .game-stats {
+                text-align: left;
+            }
+
+            .pick-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏀 NBA Prop Predictor</h1>
+            <p style="color: #666; margin-bottom: 20px;">High-Confidence Player Props (90%+ Win Rate)</p>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>RECORD</h3>
+                    <div class="value">{{ record.wins }}-{{ record.losses }}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>WIN RATE</h3>
+                    <div class="value">{{ "%.1f"|format(record.win_percentage) }}%</div>
+                </div>
+                <div class="stat-card">
+                    <h3>PENDING PICKS</h3>
+                    <div class="value">{{ total_picks }}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>AVG CONFIDENCE</h3>
+                    <div class="value">{{ "%.1f"|format(avg_confidence * 100) }}%</div>
+                </div>
+            </div>
+
+            <button class="refresh-btn" onclick="refreshData()">🔄 Refresh Data</button>
+        </div>
+
+        <div class="games-container">
+            {% if games %}
+                {% for game in games %}
+                <div class="game-card">
+                    <div class="game-header" onclick="toggleGame(this)">
+                        <div class="game-info">
+                            <div class="game-title">{{ game.game }}</div>
+                            <div class="game-meta">{{ game.date }} • {{ game.time }}</div>
+                        </div>
+                        <div class="game-stats">
+                            <div class="picks-count">{{ game.pick_count }} Pick{{ 's' if game.pick_count != 1 else '' }}</div>
+                            <div class="confidence">Avg: {{ "%.1f"|format(game.avg_confidence * 100) }}%</div>
+                        </div>
+                        <div class="expand-icon">▼</div>
+                    </div>
+                    
+                    <div class="game-picks">
+                        {% for pick in game.picks %}
+                        <div class="pick-item">
+                            <div class="pick-player">
+                                {% if pick.meets_threshold %}
+                                <span style="background: #11998e; color: white; padding: 3px 8px; border-radius: 5px; font-size: 0.7em; margin-right: 10px;">🎯 HIGH CONFIDENCE</span>
+                                {% else %}
+                                <span style="background: #ff9800; color: white; padding: 3px 8px; border-radius: 5px; font-size: 0.7em; margin-right: 10px;">⚠️ LOWER</span>
+                                {% endif %}
+                                {{ pick.player_name }}
+                                {% if not pick.has_dk_line %}
+                                <span style="background: #9e9e9e; color: white; padding: 3px 8px; border-radius: 5px; font-size: 0.7em; margin-left: 10px;">NO LINE</span>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="pick-stats">
+                                <div class="pick-stat">
+                                    <label>DraftKings Line</label>
+                                    <value>{{ "%.1f"|format(pick.dk_line) }} PRA O/U</value>
+                                </div>
+                                <div class="pick-stat">
+                                    <label>Season Average</label>
+                                    <value>{{ "%.1f"|format(pick.season_avg) }} PRA 
+                                        ({{ "%.1f"|format(pick.pts_avg) }}P / {{ "%.1f"|format(pick.reb_avg) }}R / {{ "%.1f"|format(pick.ast_avg) }}A)</value>
+                                </div>
+                            </div>
+
+                            <div class="recommendation">
+                                <div class="rec-line">🎯 RECOMMENDED MINIMUM: {{ "%.1f"|format(pick.recommended_minimum) }} PRA</div>
+                                <div class="rec-confidence">📊 Confidence: {{ "%.1f"|format(pick.confidence * 100) }}%</div>
+                            </div>
+
+                            <div class="analysis">
+                                💡 {{ pick.reasoning }}
+                            </div>
+
+                            <div class="benefits">
+                                <div class="benefit">
+                                    <div class="benefit-value">{{ "%.1f"|format(pick.cushion) }}</div>
+                                    <div class="benefit-label">pts below average</div>
+                                </div>
+                                <div class="benefit">
+                                    <div class="benefit-value">{{ "%.1f"|format(pick.below_dk) }}</div>
+                                    <div class="benefit-label">pts below DK line</div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-picks">
+                    <h2>No Predictions Available</h2>
+                    <p>Run <code>python main.py predict</code> to generate picks</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        function toggleGame(header) {
+            const icon = header.querySelector('.expand-icon');
+            const picks = header.nextElementSibling;
+            
+            icon.classList.toggle('expanded');
+            picks.classList.toggle('expanded');
+        }
+
+        function refreshData() {
+            location.reload();
+        }
+
+        // Auto-collapse all games on load (optional)
+        // document.addEventListener('DOMContentLoaded', function() {
+        //     document.querySelectorAll('.game-header').forEach(header => {
+        //         // All collapsed by default
+        //     });
+        // });
+    </script>
+</body>
+</html>

@@ -1,0 +1,162 @@
+#!/usr/bin/env python3
+"""
+Setup and test script for NBA Prop Predictor System
+"""
+
+import os
+import sys
+import subprocess
+
+def check_dependencies():
+    """Check if all required packages are installed"""
+    print("Checking dependencies...")
+    
+    required = [
+        'requests', 'pandas', 'numpy', 'sklearn', 'xgboost',
+        'bs4', 'lxml', 'joblib', 'matplotlib', 'seaborn', 'tqdm'
+    ]
+    
+    missing = []
+    for package in required:
+        try:
+            __import__(package if package != 'sklearn' else 'sklearn')
+            print(f"  ✓ {package}")
+        except ImportError:
+            print(f"  ✗ {package} - MISSING")
+            missing.append(package)
+    
+    if missing:
+        print(f"\nMissing packages: {', '.join(missing)}")
+        print("\nInstall with: pip install -r requirements.txt")
+        return False
+    
+    print("\n✓ All dependencies installed!")
+    return True
+
+def create_directories():
+    """Create necessary directory structure"""
+    print("\nCreating directory structure...")
+    
+    from config import DATA_DIR, CSV_DIR, MODELS_DIR, LOGS_DIR, BACKTEST_DIR
+    
+    directories = [DATA_DIR, CSV_DIR, MODELS_DIR, LOGS_DIR, BACKTEST_DIR]
+    
+    for directory in directories:
+        os.makedirs(directory, exist_ok=True)
+        print(f"  ✓ {directory}")
+    
+    print("\n✓ Directory structure created!")
+
+def test_api_connection():
+    """Test Odds API connection"""
+    print("\nTesting Odds API connection...")
+    
+    try:
+        from odds_fetcher import OddsAPIFetcher
+        
+        fetcher = OddsAPIFetcher()
+        games = fetcher.get_upcoming_games()
+        
+        if games:
+            print(f"  ✓ API connection successful!")
+            print(f"  ✓ Found {len(games)} upcoming NBA games")
+            return True
+        else:
+            print("  ⚠ API connected but no games found (off-season?)")
+            return True
+    except Exception as e:
+        print(f"  ✗ API connection failed: {e}")
+        return False
+
+def test_scraper():
+    """Test player stats scraper"""
+    print("\nTesting player stats scraper...")
+    
+    try:
+        from stats_scraper import PlayerStatsScraper
+        
+        scraper = PlayerStatsScraper()
+        print("  ✓ Scraper initialized")
+        return True
+    except Exception as e:
+        print(f"  ✗ Scraper test failed: {e}")
+        return False
+
+def run_demo():
+    """Run a quick demonstration"""
+    print("\n" + "=" * 60)
+    print("RUNNING DEMONSTRATION")
+    print("=" * 60)
+    
+    # Train model with synthetic data
+    print("\n1. Training model with synthetic data...")
+    from ml_predictor import PropPredictor, create_synthetic_training_data
+    
+    predictor = PropPredictor()
+    train_df = create_synthetic_training_data()
+    
+    X, y = predictor.prepare_training_data(train_df)
+    if X is not None:
+        results = predictor.train_model(X, y)
+        print("✓ Model trained successfully!")
+    
+    # Run quick backtest
+    print("\n2. Running quick backtest...")
+    from backtester import Backtester, create_mock_backtest_data
+    
+    backtester = Backtester()
+    historical_df = create_mock_backtest_data()
+    
+    result = backtester.run_backtest(historical_df, days=10)
+    
+    if result and result[0] is not None:
+        metrics, results_df = result
+        print("\n✓ Backtest completed!")
+        print(f"  Accuracy: {metrics['accuracy']:.1%}")
+        print(f"  Win Rate: {metrics['win_rate']:.1%}")
+        print(f"  Total Predictions: {metrics['total_predictions']}")
+    else:
+        print("\n⚠ Backtest: No high-confidence predictions (normal for short demo)")
+        print(f"  System filters for 90%+ confidence - working as designed!")
+    else:
+    
+    print("\n" + "=" * 60)
+    print("DEMONSTRATION COMPLETE")
+    print("=" * 60)
+    print("\nThe system is ready to use!")
+    print("\nNext steps:")
+    print("  1. python main.py update    - Fetch real data")
+    print("  2. python main.py train     - Train with real data")
+    print("  3. python main.py predict   - Generate predictions")
+
+def main():
+    """Main setup function"""
+    print("\n" + "=" * 60)
+    print("NBA PROP PREDICTOR SYSTEM - SETUP & TEST")
+    print("=" * 60)
+    
+    # Check dependencies
+    if not check_dependencies():
+        print("\n⚠ Please install missing dependencies first")
+        sys.exit(1)
+    
+    # Create directories
+    create_directories()
+    
+    # Test API
+    test_api_connection()
+    
+    # Test scraper
+    test_scraper()
+    
+    # Ask to run demo
+    print("\n" + "=" * 60)
+    response = input("\nRun demonstration? (y/n): ").lower()
+    
+    if response == 'y':
+        run_demo()
+    else:
+        print("\nSetup complete! Use 'python main.py' to see available commands.")
+
+if __name__ == "__main__":
+    main()

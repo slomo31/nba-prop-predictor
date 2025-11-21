@@ -1,0 +1,296 @@
+"""
+Backtesting module for evaluating prediction system performance
+"""
+
+import pandas as pd
+import numpy as np
+from datetime import datetime, timedelta
+import logging
+from config import (
+    BACKTEST_RESULTS_CSV, BACKTEST_DIR,
+    CONFIDENCE_THRESHOLD, BACKTEST_START_DATE, BACKTEST_DAYS
+)
+from ml_predictor import PropPredictor
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+class Backtester:
+    def __init__(self):
+        self.predictor = PropPredictor()
+        self.results = []
+        
+    def load_historical_data(self, start_date, end_date):
+        """
+        Load historical player performance and prop lines data
+        This would come from your scraped data
+        """
+        # In production, this would load real historical data
+        # For now, we'll simulate it
+        logger.info(f"Loading historical data from {start_date} to {end_date}")
+        
+        # This is placeholder - in production, load from your CSVs
+        return None
+    
+    def simulate_historical_predictions(self, historical_df, lookback_days=30):
+        """
+        Simulate making predictions on historical data
+        Walk forward through time and predict each day
+        """
+        results = []
+        
+        # Sort by date
+        historical_df = historical_df.sort_values('date')
+        
+        # Get unique dates
+        dates = sorted(historical_df['date'].unique())
+        
+        for i, current_date in enumerate(dates[lookback_days:]):
+            # Training data: all data up to current_date
+            train_end = current_date - timedelta(days=1)
+            train_start = train_end - timedelta(days=lookback_days)
+            
+            train_df = historical_df[
+                (historical_df['date'] >= train_start) & 
+                (historical_df['date'] <= train_end)
+            ]
+            
+            # Test data: current_date
+            test_df = historical_df[historical_df['date'] == current_date]
+            
+            if len(train_df) < 50 or len(test_df) == 0:
+                continue
+            
+            # Train model on historical data
+            X_train, y_train = self.predictor.prepare_training_data(train_df)
+            
+            if X_train is None:
+                continue
+            
+            self.predictor.train_model(X_train, y_train)
+            
+            # Make predictions on test data
+            for _, row in test_df.iterrows():
+                player_data = pd.DataFrame([row])
+                
+                # Predict
+                predictions, probabilities = self.predictor.predict(player_data)
+                
+                if predictions is None:
+                    continue
+                
+                confidence = probabilities[0]
+                predicted_hit = predictions[0]
+                actual_hit = row['hit_line']
+                
+                # Only track high confidence predictions
+                if confidence >= CONFIDENCE_THRESHOLD:
+                    results.append({
+                        'date': current_date,
+                        'player_name': row['player_name'],
+                        'line': row['line'],
+                        'predicted_hit': predicted_hit,
+                        'actual_hit': actual_hit,
+                        'confidence': confidence,
+                        'correct': predicted_hit == actual_hit,
+                        'actual_total': row.get('actual_total', None)
+                    })
+        
+        return pd.DataFrame(results)
+    
+    def calculate_metrics(self, results_df):
+        """Calculate performance metrics"""
+        if results_df.empty:
+            logger.warning("No results to calculate metrics")
+            return None
+        
+        total_predictions = len(results_df)
+        correct_predictions = results_df['correct'].sum()
+        accuracy = correct_predictions / total_predictions
+        
+        # Calculate by confidence buckets
+        results_df['confidence_bucket'] = pd.cut(
+            results_df['confidence'],
+            bins=[0.90, 0.92, 0.94, 0.96, 0.98, 1.0],
+            labels=['90-92%', '92-94%', '94-96%', '96-98%', '98-100%']
+        )
+        
+        bucket_stats = results_df.groupby('confidence_bucket').agg({
+            'correct': ['count', 'sum', 'mean']
+        }).round(3)
+        
+        # Win rate
+        win_rate = accuracy
+        
+        # Expected value calculation (simplified)
+        # Assuming average odds of -200 (1.5 decimal odds)
+        avg_odds = 1.5
+        expected_value = (accuracy * (avg_odds - 1)) - ((1 - accuracy) * 1)
+        
+        metrics = {
+            'total_predictions': total_predictions,
+            'correct_predictions': correct_predictions,
+            'accuracy': accuracy,
+            'win_rate': win_rate,
+            'expected_value': expected_value,
+            'avg_confidence': results_df['confidence'].mean(),
+            'confidence_bucket_stats': bucket_stats
+        }
+        
+        return metrics
+    
+    def run_backtest(self, historical_df, start_date=None, days=None):
+        """Run complete backtest"""
+        if start_date is None:
+            start_date = BACKTEST_START_DATE
+        
+        if days is None:
+            days = BACKTEST_DAYS
+        
+        start = pd.to_datetime(start_date)
+        end = start + timedelta(days=days)
+        
+        logger.info(f"Running backtest from {start} to {end}")
+        
+        # Filter historical data to backtest period
+        test_df = historical_df[
+            (historical_df['date'] >= start) & 
+            (historical_df['date'] <= end)
+        ]
+        
+        if test_df.empty:
+            logger.error("No data available for backtest period")
+            return None
+        
+        # Run simulation
+        results_df = self.simulate_historical_predictions(test_df)
+        
+        if results_df.empty:
+            logger.error("No predictions generated during backtest")
+            return None
+        
+        # Calculate metrics
+        metrics = self.calculate_metrics(results_df)
+        
+        # Save results
+        results_df.to_csv(BACKTEST_RESULTS_CSV, index=False)
+        logger.info(f"Backtest results saved to {BACKTEST_RESULTS_CSV}")
+        
+        return metrics, results_df
+    
+    def generate_backtest_report(self, metrics, results_df):
+        """Generate detailed backtest report"""
+        report = []
+        report.append("=" * 60)
+        report.append("BACKTEST PERFORMANCE REPORT")
+        report.append("=" * 60)
+        report.append("")
+        
+        report.append(f"Total Predictions: {metrics['total_predictions']}")
+        report.append(f"Correct Predictions: {metrics['correct_predictions']}")
+        report.append(f"Accuracy: {metrics['accuracy']:.2%}")
+        report.append(f"Win Rate: {metrics['win_rate']:.2%}")
+        report.append(f"Expected Value: {metrics['expected_value']:.4f}")
+        report.append(f"Average Confidence: {metrics['avg_confidence']:.2%}")
+        report.append("")
+        
+        report.append("Confidence Bucket Performance:")
+        report.append(str(metrics['confidence_bucket_stats']))
+        report.append("")
+        
+        # Daily performance
+        if not results_df.empty:
+            daily_stats = results_df.groupby('date').agg({
+                'correct': ['count', 'sum', 'mean']
+            })
+            report.append("Daily Performance Summary:")
+            report.append(str(daily_stats.head(10)))
+        
+        report.append("")
+        report.append("=" * 60)
+        
+        return "\n".join(report)
+
+
+def create_mock_backtest_data():
+    """Create mock historical data for backtesting demonstration"""
+    np.random.seed(42)
+    
+    dates = pd.date_range(start='2024-10-01', end='2024-11-15', freq='D')
+    players = [f'Player_{i}' for i in range(30)]
+    
+    data = []
+    
+    for date in dates:
+        # 5-15 games per day
+        n_games = np.random.randint(5, 16)
+        
+        for _ in range(n_games):
+            player = np.random.choice(players)
+            
+            # Generate stats
+            points_avg = np.random.uniform(15, 28)
+            rebounds_avg = np.random.uniform(4, 11)
+            assists_avg = np.random.uniform(3, 9)
+            
+            # Add some noise for actual performance
+            actual_points = np.random.normal(points_avg, 5)
+            actual_rebounds = np.random.normal(rebounds_avg, 2.5)
+            actual_assists = np.random.normal(assists_avg, 2)
+            
+            pts_reb_ast_avg = points_avg + rebounds_avg + assists_avg
+            actual_total = actual_points + actual_rebounds + actual_assists
+            
+            # Line is typically set around average
+            line = np.random.normal(pts_reb_ast_avg, 2)
+            
+            data.append({
+                'date': date,
+                'player_name': player,
+                'games_played': np.random.randint(5, 20),
+                'minutes_avg': np.random.uniform(25, 36),
+                'points_avg': points_avg,
+                'rebounds_avg': rebounds_avg,
+                'assists_avg': assists_avg,
+                'points': actual_points,
+                'rebounds': actual_rebounds,
+                'assists': actual_assists,
+                'points_last_5': np.random.normal(points_avg, 3),
+                'rebounds_last_5': np.random.normal(rebounds_avg, 1.5),
+                'assists_last_5': np.random.normal(assists_avg, 1.5),
+                'home_away': np.random.choice([0, 1]),
+                'days_rest': np.random.randint(0, 4),
+                'opponent_def_rating': np.random.uniform(100, 115),
+                'usage_rate': np.random.uniform(0.18, 0.32),
+                'true_shooting_pct': np.random.uniform(0.50, 0.62),
+                'pts_reb_ast_avg': pts_reb_ast_avg,
+                'line': line,
+                'actual_total': actual_total,
+                'hit_line': int(actual_total >= line)
+            })
+    
+    return pd.DataFrame(data)
+
+
+if __name__ == "__main__":
+    backtester = Backtester()
+    
+    # Create mock data for demonstration
+    print("Creating mock historical data...")
+    historical_df = create_mock_backtest_data()
+    
+    print(f"Mock data shape: {historical_df.shape}")
+    print(f"Date range: {historical_df['date'].min()} to {historical_df['date'].max()}")
+    print(f"Overall hit rate: {historical_df['hit_line'].mean():.2%}")
+    
+    # Run backtest
+    print("\nRunning backtest...")
+    metrics, results_df = backtester.run_backtest(
+        historical_df,
+        start_date='2024-10-15',
+        days=25
+    )
+    
+    if metrics:
+        print("\n" + backtester.generate_backtest_report(metrics, results_df))

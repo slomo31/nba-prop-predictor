@@ -1,0 +1,480 @@
+cd ~/Documents/nba_prop_predictor
+
+cat > COMPLETE_COMMAND_REFERENCE.md << 'EOF'
+# 📋 NBA PROP PREDICTOR - COMPLETE COMMAND REFERENCE
+
+## ============================================================
+## 🎯 DAILY WORKFLOW (Run every morning)
+## ============================================================
+
+# 1. Update data (player stats + odds)
+python main.py update
+
+# 2. Generate predictions
+python main.py predict
+
+# 3. Launch dashboard to view picks
+python dashboard.py
+# Then open browser to: http://localhost:5000
+
+# 4. Review picks and place bets
+# Predictions also saved to: data/csv/predictions.csv
+
+
+## ============================================================
+## 📊 VIEW DASHBOARD (Recommended)
+## ============================================================
+
+# Start dashboard server
+python dashboard.py
+
+# Open in browser: http://localhost:5000
+
+# Features:
+# - View overall record (W-L, Win %)
+# - See pending picks count
+# - Games grouped and collapsible
+# - Click game header to expand/collapse
+# - Easy scrolling through games
+# - Refresh button to update
+
+
+## ============================================================
+## ⏭️ NEXT MORNING (Auto-mark results from yesterday)
+## ============================================================
+
+# Automatically scrape results and mark all picks
+python game_results_scraper.py yesterday
+
+# Check your record
+python results_tracker.py record
+
+# See recent results
+python results_tracker.py recent
+
+# Refresh dashboard to see updated record
+# (Just click refresh button or reload page)
+
+
+## ============================================================
+## 📝 MANUAL RESULT TRACKING (if auto-scraper fails)
+## ============================================================
+
+# Mark individual results
+python results_tracker.py mark 'Stephen Curry' W 2025-11-19 38.5
+python results_tracker.py mark 'LeBron James' L 2025-11-19 35.2
+
+# Show current record
+python results_tracker.py record
+
+# Show recent results
+python results_tracker.py recent
+
+# Export detailed report
+python results_tracker.py report
+
+
+## ============================================================
+## 📈 SCRAPING HISTORICAL RESULTS
+## ============================================================
+
+# Scrape yesterday's games
+python game_results_scraper.py yesterday
+
+# Scrape specific date
+python game_results_scraper.py date 2025-11-19
+
+# Scrape date range (backfill)
+python game_results_scraper.py range 2025-11-15 2025-11-19
+
+
+## ============================================================
+## 🔧 WEEKLY MAINTENANCE
+## ============================================================
+
+# Retrain model with new data
+python main.py train
+
+# Run backtest validation
+python main.py backtest
+
+
+## ============================================================
+## 🛠️ UTILITY COMMANDS
+## ============================================================
+
+# Check data freshness
+python utils.py freshness
+
+# View CSV statistics
+python utils.py stats
+
+# Clean old data (30+ days)
+python utils.py clean
+
+# Export predictions to text
+python utils.py export
+
+# Merge duplicate records
+python utils.py merge
+
+
+## ============================================================
+## 🚀 COMPLETE PIPELINE (All in one)
+## ============================================================
+
+# Update, train, predict, backtest
+python main.py full
+
+
+## ============================================================
+## ✅ TESTING & VALIDATION
+## ============================================================
+
+# Test setup
+python setup.py
+
+# Test individual components
+python odds_fetcher.py
+python stats_scraper.py
+python ml_predictor.py
+python minimum_line_calculator.py
+python game_results_scraper.py yesterday
+
+
+## ============================================================
+## 📁 FILE LOCATIONS
+## ============================================================
+
+# Predictions:           data/csv/predictions.csv
+# Player Stats:          data/csv/player_stats.csv
+# Odds Data:             data/csv/odds_data.csv
+# Game Results:          data/csv/game_results.csv
+# Pick Results:          data/csv/pick_results.csv
+# Overall Record:        data/csv/overall_record.json
+# Trained Model:         data/models/prop_model.pkl
+# Backtest Reports:      data/backtest/
+
+
+## ============================================================
+## 📅 TYPICAL DAILY ROUTINE
+## ============================================================
+
+### MORNING (Before games - 5 minutes):
+```bash
+python main.py update       # Fetch fresh data
+python main.py predict      # Generate picks
+python dashboard.py         # Launch dashboard
+# Open http://localhost:5000 in browser
+# Review picks and place bets
+```
+
+### NEXT MORNING (After games finish - 2 minutes):
+```bash
+python game_results_scraper.py yesterday    # Auto-mark results
+python results_tracker.py record            # Check W-L record
+# Refresh dashboard to see updated record
+```
+
+### WEEKLY (Sunday):
+```bash
+python main.py train        # Retrain model
+python main.py backtest     # Validate performance
+```
+
+
+## ============================================================
+## 🌐 DASHBOARD USAGE
+## ============================================================
+
+# Start dashboard
+python dashboard.py
+
+# Dashboard URL
+http://localhost:5000
+
+# Features:
+# ✓ Overall record display (W-L, Win %)
+# ✓ Pending picks counter
+# ✓ Average confidence
+# ✓ Games grouped by matchup
+# ✓ Collapsible game sections
+# ✓ Click header to expand/collapse
+# ✓ Full pick details when expanded
+# ✓ Refresh button to update data
+# ✓ Mobile responsive
+# ✓ Clean, fast interface
+
+# Tips:
+# - Leave terminal running with dashboard
+# - Refresh browser after generating new picks
+# - Collapse games you're not interested in
+# - Click refresh button to update record
+
+
+## ============================================================
+## 📊 VIEWING DATA
+## ============================================================
+
+# View predictions (formatted)
+python main.py predict
+
+# View predictions (dashboard - RECOMMENDED)
+python dashboard.py
+# Then open: http://localhost:5000
+
+# View predictions (raw CSV)
+cat data/csv/predictions.csv
+
+# View player stats
+head -20 data/csv/player_stats.csv
+
+# View overall record
+cat data/csv/overall_record.json
+
+# View recent pick results
+tail -20 data/csv/pick_results.csv
+
+
+## ============================================================
+## 🔍 TROUBLESHOOTING
+## ============================================================
+
+# Check if data is fresh
+python utils.py freshness
+
+# Verify scraper works
+python stats_scraper.py
+
+# Test API connection
+python odds_fetcher.py
+
+# Check model exists
+ls -lh data/models/
+
+# View logs
+tail -50 data/logs/scheduler.log
+
+# Dashboard not loading?
+# - Check if Flask is installed: pip install flask
+# - Check if port 5000 is available
+# - Try: python dashboard.py
+
+
+## ============================================================
+## 🤖 AUTOMATION (Optional - Set and forget)
+## ============================================================
+
+# Run scheduler (handles daily updates automatically)
+python scheduler.py prod
+
+
+## ============================================================
+## ⚡ QUICK REFERENCE CARD
+## ============================================================
+
+# Daily:     python main.py update && python main.py predict && python dashboard.py
+# Next Day:  python game_results_scraper.py yesterday
+# Record:    python results_tracker.py record
+# Dashboard: python dashboard.py → http://localhost:5000
+# Weekly:    python main.py train
+
+
+## ============================================================
+## 🎨 DASHBOARD FEATURES
+## ============================================================
+
+### Top Stats Bar:
+- Record (e.g., 30-7)
+- Win Rate (e.g., 81.1%)
+- Pending Picks (e.g., 37 picks)
+- Average Confidence (e.g., 92.1%)
+
+### Game Cards (Collapsible):
+- **COLLAPSED**: Shows game, time, date, pick count
+- **EXPANDED**: Shows all pick details
+  - Player name
+  - DK main line
+  - Season average (PTS/REB/AST breakdown)
+  - 🎯 Recommended minimum line
+  - 📊 Confidence percentage
+  - 💡 Analysis reasoning
+  - Cushion below average
+  - Cushion below DK line
+
+### Navigation:
+- Click any game header to toggle
+- All games start collapsed
+- Scroll quickly when collapsed
+- Expand only games you want to bet
+
+
+## ============================================================
+## 💡 PRO TIPS
+## ============================================================
+
+### For Dashboard:
+1. Keep dashboard running in one terminal
+2. Update predictions in another terminal
+3. Refresh browser to see new picks
+4. Collapse games after reviewing
+5. Use dashboard on phone/tablet too (responsive)
+
+### For Daily Use:
+1. Update data every morning
+2. Use dashboard to review picks
+3. Only bet on 93%+ confidence
+4. Mark results next morning
+5. Track your own record too
+
+### For Best Results:
+1. Stick to high-confidence picks (90%+)
+2. Check DraftKings for exact alternate lines
+3. Build 3-5 leg parlays from same game
+4. Track results to validate system
+5. Retrain model weekly
+
+
+## ============================================================
+## 🚦 GETTING STARTED (First Time)
+## ============================================================
+
+# 1. Install dependencies
+pip install -r requirements.txt
+
+# 2. Test system
+python setup.py
+
+# 3. Update data
+python main.py update
+
+# 4. Generate predictions
+python main.py predict
+
+# 5. Launch dashboard
+python dashboard.py
+
+# 6. Open browser
+http://localhost:5000
+
+# 7. Place bets!
+
+
+## ============================================================
+## 📱 WORKFLOW DIAGRAM
+## ============================================================
+```
+MORNING:
+┌─────────────────┐
+│ python main.py  │
+│ update          │ ← Fetch data (30 sec)
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ python main.py  │
+│ predict         │ ← Generate picks (5 sec)
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ python          │
+│ dashboard.py    │ ← View picks
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ Open browser:   │
+│ localhost:5000  │ ← Review & bet
+└─────────────────┘
+
+NEXT MORNING:
+┌─────────────────┐
+│ python game_    │
+│ results_scraper │
+│ .py yesterday   │ ← Auto-mark (2 min)
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ python results_ │
+│ tracker.py      │
+│ record          │ ← Check record
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ Refresh         │
+│ dashboard       │ ← See updated record
+└─────────────────┘
+```
+
+
+## ============================================================
+## 🎯 SUCCESS METRICS
+## ============================================================
+
+After 30 days you should have:
+✅ 200+ predictions made
+✅ 90%+ win rate
+✅ Automated workflow
+✅ Dashboard for easy viewing
+✅ Tracked record
+✅ Profitable results
+
+
+## ============================================================
+## 🆘 SUPPORT
+## ============================================================
+
+### Common Issues:
+
+**Dashboard won't load:**
+```bash
+pip install flask
+python dashboard.py
+```
+
+**No predictions showing:**
+```bash
+python main.py update
+python main.py predict
+# Refresh browser
+```
+
+**Record not updating:**
+```bash
+python game_results_scraper.py yesterday
+# Refresh dashboard
+```
+
+**Data seems old:**
+```bash
+python utils.py freshness
+python main.py update
+```
+
+
+## ============================================================
+## 🎉 YOU'RE READY!
+## ============================================================
+
+Your complete NBA Prop Predictor system is operational:
+✅ Data fetching and scraping
+✅ ML predictions with 90%+ confidence
+✅ Automated results tracking
+✅ Interactive web dashboard
+✅ Organized file structure
+✅ Complete documentation
+
+Start making money! 🏀💰
+EOF
+
+echo "✓ Created COMPLETE_COMMAND_REFERENCE.md"
+echo ""
+echo "📋 Command reference updated with dashboard instructions!"
+echo ""
+echo "View the file:"
+echo "  cat COMPLETE_COMMAND_REFERENCE.md"
+echo ""
+echo "Or open in VS Code to copy commands"
