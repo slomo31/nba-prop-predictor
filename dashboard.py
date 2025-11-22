@@ -131,20 +131,6 @@ if __name__ == '__main__':
     app.run(debug=True, port=5000)
 
 # Add this at the bottom for Render deployment
-@app.route('/generate')
-def generate_predictions():
-    """Generate fresh predictions"""
-    try:
-        # Run update and predict
-        subprocess.run([sys.executable, 'main.py', 'update'], check=True, timeout=120)
-        subprocess.run([sys.executable, 'main.py', 'predict'], check=True, timeout=60)
-        return {'status': 'success', 'message': 'Predictions generated!'}
-    except subprocess.TimeoutExpired:
-        return {'status': 'error', 'message': 'Timeout - this takes a while on Render'}, 500
-    except Exception as e:
-        return {'status': 'error', 'message': str(e)}, 500
-
-
 if __name__ == '__main__':
     import os
     port = int(os.environ.get('PORT', 5000))
