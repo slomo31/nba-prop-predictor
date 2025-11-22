@@ -2,9 +2,10 @@
 Interactive web dashboard for NBA Prop Predictor
 """
 
-from flask import Flask
+from flask import Flask, render_template, jsonify
 import subprocess
-import sys, render_template, jsonify
+import sys
+from flask import render_template, jsonify
 import pandas as pd
 import json
 from datetime import datetime
