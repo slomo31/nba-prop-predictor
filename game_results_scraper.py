@@ -186,19 +186,38 @@ class GameResultsScraper:
             player_name = pred['player_name']
             recommended_min = pred['recommended_minimum']
             
-            # Match player
-            first_name = player_name.split()[0]
-            result = results_df[results_df['player_name'].str.contains(first_name, case=False, na=False)]
+            # Match player - IMPROVED MATCHING LOGIC
+            # Normalize names (remove periods, extra spaces)
+            pred_name_norm = player_name.replace('.', '').strip()
+            
+            # Try exact match first
+            result = results_df[results_df['player_name'].str.replace('.', '').str.strip().str.lower() == pred_name_norm.lower()]
+            
+            # If no exact match, try last name match (more specific than first name)
+            if result.empty:
+                last_name = player_name.split()[-1].replace('.', '').replace('Jr', '').replace('III', '').replace('II', '').strip()
+                if last_name and len(last_name) > 2:  # Avoid matching on "Jr"
+                    result = results_df[results_df['player_name'].str.contains(last_name, case=False, na=False)]
+                    
+                    # If multiple matches, try to match first name too
+                    if len(result) > 1:
+                        first_name = player_name.split()[0]
+                        temp_result = result[result['player_name'].str.contains(first_name, case=False, na=False)]
+                        if not temp_result.empty:
+                            result = temp_result
             
             if result.empty:
-                logger.warning(f"No result found for {player_name}")
+                logger.info(f"No prediction found for {player_name} - skipping")
                 continue
+            
+            if len(result) > 1:
+                logger.warning(f"Multiple matches for {player_name}: {result['player_name'].tolist()} - using first")
             
             result = result.iloc[0]
             actual_pra = result['pra']
             
             # Skip DNP (voided by DK)
-            if actual_pra == 0.0:
+            if actual_pra == 0.0 or pd.isna(actual_pra):
                 logger.info(f"Skipping {player_name} - DNP/Injury (0.0 PRA - voided)")
                 continue
             
@@ -211,7 +230,6 @@ class GameResultsScraper:
         
         logger.info(f"\n✓ Auto-marked {marked_count} predictions")
         self.tracker.show_record()
-    
     def process_yesterday(self):
         """Process yesterday's games"""
         yesterday = datetime.now() - timedelta(days=1)

@@ -35,9 +35,23 @@ class ResultsTracker:
                 'actual_pra', 'result', 'marked_at'
             ])
         
-        # Get the prediction
+        # Get the prediction - use fuzzy matching
         pred_df = pd.read_csv(PREDICTIONS_CSV)
-        pred = pred_df[pred_df['player_name'] == player_name]
+        
+        # Try exact match first (normalized)
+        pred_name_norm = player_name.replace('.', '').strip()
+        pred = pred_df[pred_df['player_name'].str.replace('.', '').str.strip().str.lower() == pred_name_norm.lower()]
+        
+        # If no match, try last name
+        if pred.empty:
+            last_name = player_name.split()[-1].replace('.', '').replace('Jr', '').replace('III', '').replace('II', '').strip()
+            if last_name and len(last_name) > 2:
+                pred = pred_df[pred_df['player_name'].str.contains(last_name, case=False, na=False)]
+                if len(pred) > 1:
+                    first_name = player_name.split()[0]
+                    temp_pred = pred[pred['player_name'].str.contains(first_name, case=False, na=False)]
+                    if not temp_pred.empty:
+                        pred = temp_pred
         
         if pred.empty:
             print(f"No prediction found for {player_name}")
