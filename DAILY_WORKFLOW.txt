@@ -1,0 +1,139 @@
+# ============================================================
+# NBA PROP PREDICTOR - DAILY WORKFLOW COMMANDS
+# ============================================================
+# Save this file for reference!
+# Last updated: Nov 24, 2025
+# ============================================================
+
+# ------------------------------------------------------------
+# DAILY WORKFLOW (Run these every day)
+# ------------------------------------------------------------
+
+# STEP 1: Navigate to your project folder
+cd ~/Documents/nba_prop_predictor
+
+# STEP 2: Activate virtual environment
+source venv/bin/activate
+
+# STEP 3: Generate fresh predictions for today's games
+python main.py update    # Updates player stats
+python main.py predict   # Generates predictions
+
+# STEP 4: View dashboard locally (open http://127.0.0.1:5001)
+PORT=5001 python dashboard.py
+
+# STEP 5: Push to Render (makes it available on your phone/anywhere)
+git add .
+git commit -m "Daily predictions update"
+git push origin main
+
+
+# ------------------------------------------------------------
+# NEXT DAY - CHECK RESULTS (Run morning after games)
+# ------------------------------------------------------------
+
+# Check results from yesterday's games
+python game_results_scraper.py
+
+# This will:
+# - Scrape actual PRA from Basketball Reference
+# - Update pick_results.csv with W/L for each pick
+# - Update overall_record.json with new totals
+# - Show you a summary of wins/losses
+
+
+# ------------------------------------------------------------
+# WEEKLY - UPDATE PLAYER CONSISTENCY DATA (INCREMENTAL)
+# ------------------------------------------------------------
+
+# Run this once a week (Sunday recommended) to refresh
+# the consistency records with new game data
+
+python player_consistency_backtest.py
+
+# This is now INCREMENTAL and will:
+# - Check which games have already been processed
+# - ONLY fetch NEW games since last run (saves time!)
+# - Takes ~30 seconds if only 20-30 new games
+# - Automatically saves progress after each game
+# - Update player_consistency.csv with all data
+# - Dashboard will show updated records next time you run it
+
+# FULL RESET (only if something is broken):
+python player_consistency_backtest.py --reset
+# This clears all cached data and re-fetches everything (takes 3-5 min)
+
+
+# ------------------------------------------------------------
+# QUICK REFERENCE - ALL COMMANDS
+# ------------------------------------------------------------
+
+# Navigate & activate:
+cd ~/Documents/nba_prop_predictor && source venv/bin/activate
+
+# Generate predictions:
+python main.py update && python main.py predict
+
+# View dashboard:
+PORT=5001 python dashboard.py
+
+# Check yesterday's results:
+python game_results_scraper.py
+
+# Update consistency data (weekly):
+python player_consistency_backtest.py
+
+# Push to Render:
+git add . && git commit -m "Update" && git push origin main
+
+# Kill stuck dashboard process:
+lsof -ti:5001 | xargs kill -9
+
+
+# ------------------------------------------------------------
+# ONE-LINER FOR DAILY PREDICTIONS
+# ------------------------------------------------------------
+
+cd ~/Documents/nba_prop_predictor && source venv/bin/activate && python main.py update && python main.py predict && PORT=5001 python dashboard.py
+
+
+# ------------------------------------------------------------
+# URLS
+# ------------------------------------------------------------
+
+# Local dashboard: http://127.0.0.1:5001
+# Render dashboard: https://nba-prop-predictor.onrender.com
+# GitHub repo: https://github.com/slomo31/nba-prop-predictor
+
+
+# ------------------------------------------------------------
+# FILE LOCATIONS
+# ------------------------------------------------------------
+
+# Predictions: data/csv/predictions.csv
+# Pick results: data/csv/pick_results.csv  
+# Overall record: data/csv/overall_record.json
+# Player consistency: data/csv/player_consistency.csv
+# Season game data: data/csv/season_game_results.csv
+# Player stats: data/csv/player_stats.csv
+
+
+# ------------------------------------------------------------
+# TROUBLESHOOTING
+# ------------------------------------------------------------
+
+# Dashboard won't start (port in use):
+lsof -ti:5001 | xargs kill -9
+PORT=5001 python dashboard.py
+
+# No predictions showing:
+python main.py predict
+
+# Consistency data not loading:
+python player_consistency_backtest.py
+
+# Git push fails:
+git pull origin main
+git add .
+git commit -m "Update"
+git push origin main

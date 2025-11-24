@@ -16,6 +16,60 @@ from results_tracker import ResultsTracker
 app = Flask(__name__)
 
 RECORD_FILE = os.path.join(CSV_DIR, 'overall_record.json')
+CONSISTENCY_FILE = os.path.join(CSV_DIR, 'player_consistency.csv')
+
+
+def load_player_consistency():
+    """Load player consistency records from backtest"""
+    try:
+        df = pd.read_csv(CONSISTENCY_FILE)
+        consistency = {}
+        for _, row in df.iterrows():
+            consistency[row['player_name']] = {
+                'wins': int(row['wins']),
+                'losses': int(row['losses']),
+                'win_pct': float(row['win_pct']),
+                'tier': row['tier']
+            }
+        print(f"Loaded consistency data for {len(consistency)} players")
+        return consistency
+    except Exception as e:
+        print(f"Could not load consistency data: {e}")
+        return {}
+
+
+def get_player_consistency(player_name, consistency_data):
+    """Get consistency record for a player with fuzzy matching"""
+    if not consistency_data:
+        return None
+        
+    # Try exact match
+    if player_name in consistency_data:
+        return consistency_data[player_name]
+    
+    # Try without periods
+    clean_name = player_name.replace('.', '')
+    if clean_name in consistency_data:
+        return consistency_data[clean_name]
+    
+    # Try fuzzy match on last name + first name
+    name_parts = player_name.replace('.', '').split()
+    if len(name_parts) >= 2:
+        last = name_parts[-1].lower()
+        if last in ['jr', 'iii', 'ii', 'iv'] and len(name_parts) > 2:
+            last = name_parts[-2].lower()
+        first = name_parts[0].lower()
+        
+        for p_name, data in consistency_data.items():
+            p_lower = p_name.lower()
+            if last in p_lower and first in p_lower:
+                return data
+    
+    return None
+
+
+# Load consistency data at startup
+PLAYER_CONSISTENCY = load_player_consistency()
 
 
 def get_record():
@@ -39,8 +93,13 @@ def get_predictions():
             
             picks = []
             for _, row in game_picks.iterrows():
+                player_name = row['player_name']
+                
+                # Get consistency data for this player
+                consistency = get_player_consistency(player_name, PLAYER_CONSISTENCY)
+                
                 picks.append({
-                    'player_name': row['player_name'],
+                    'player_name': player_name,
                     'team': row.get('team', 'Unknown'),
                     'dk_line': float(row['dk_line']),
                     'has_dk_line': bool(row.get('has_dk_line', True)),
@@ -53,7 +112,8 @@ def get_predictions():
                     'confidence': float(row['confidence']),
                     'reasoning': row['reasoning'],
                     'cushion': float(row['season_avg'] - row['recommended_minimum']),
-                    'below_dk': float(row['dk_line'] - row['recommended_minimum'])
+                    'below_dk': float(row['dk_line'] - row['recommended_minimum']),
+                    'consistency': consistency  # Add consistency data
                 })
             
             # Parse game time
@@ -128,10 +188,5 @@ def generate_predictions():
 if __name__ == '__main__':
     # Check if templates directory exists
     os.makedirs('templates', exist_ok=True)
-    app.run(debug=True, port=5000)
-
-# Add this at the bottom for Render deployment
-if __name__ == '__main__':
-    import os
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host='0.0.0.0', port=port, debug=True)

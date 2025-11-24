@@ -160,6 +160,10 @@
             font-weight: bold;
             color: #333;
             margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
         }
 
         .pick-stats {
@@ -263,6 +267,37 @@
             transform: scale(1.05);
         }
 
+        /* Consistency Badge Styles */
+        .consistency-badge {
+            font-size: 0.7em;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .consistency-badge.reliable {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+
+        .consistency-badge.moderate {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+
+        .consistency-badge.avoid {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+
+        .consistency-badge.unknown {
+            background: #9ca3af;
+            color: white;
+        }
+
         @media (max-width: 768px) {
             .game-header {
                 flex-direction: column;
@@ -276,6 +311,11 @@
 
             .pick-stats {
                 grid-template-columns: 1fr;
+            }
+
+            .pick-player {
+                flex-direction: column;
+                align-items: flex-start;
             }
         }
     </style>
@@ -329,13 +369,26 @@
                         <div class="pick-item">
                             <div class="pick-player">
                                 {% if pick.meets_threshold %}
-                                <span style="background: #11998e; color: white; padding: 3px 8px; border-radius: 5px; font-size: 0.7em; margin-right: 10px;">🎯 HIGH CONFIDENCE</span>
+                                <span style="background: #11998e; color: white; padding: 3px 8px; border-radius: 5px; font-size: 0.7em;">🎯 HIGH CONFIDENCE</span>
                                 {% else %}
-                                <span style="background: #ff9800; color: white; padding: 3px 8px; border-radius: 5px; font-size: 0.7em; margin-right: 10px;">⚠️ LOWER</span>
+                                <span style="background: #ff9800; color: white; padding: 3px 8px; border-radius: 5px; font-size: 0.7em;">⚠️ LOWER</span>
                                 {% endif %}
-                                {{ pick.player_name }}
+                                
+                                <span style="font-size: 1em;">{{ pick.player_name }}</span>
+                                
+                                {% if pick.consistency %}
+                                <span class="consistency-badge 
+                                    {% if pick.consistency.win_pct >= 80 %}reliable
+                                    {% elif pick.consistency.win_pct >= 60 %}moderate
+                                    {% else %}avoid{% endif %}">
+                                    📊 {{ pick.consistency.wins }}-{{ pick.consistency.losses }} ({{ "%.1f"|format(pick.consistency.win_pct) }}%)
+                                </span>
+                                {% else %}
+                                <span class="consistency-badge unknown">📊 No data</span>
+                                {% endif %}
+                                
                                 {% if not pick.has_dk_line %}
-                                <span style="background: #9e9e9e; color: white; padding: 3px 8px; border-radius: 5px; font-size: 0.7em; margin-left: 10px;">NO LINE</span>
+                                <span style="background: #9e9e9e; color: white; padding: 3px 8px; border-radius: 5px; font-size: 0.7em;">NO LINE</span>
                                 {% endif %}
                             </div>
                             
