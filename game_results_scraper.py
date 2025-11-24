@@ -228,6 +228,30 @@ class GameResultsScraper:
             
             logger.info(f"{player_name}: {outcome} ({actual_pra:.1f} vs {recommended_min:.1f})")
         
+        # Show summary of wins and losses
+        print("\n" + "=" * 60)
+        print("TODAY'S PICKS SUMMARY")
+        print("=" * 60)
+        
+        try:
+            results = pd.read_csv(self.tracker.results_file)
+            today = results[results['date'] == date]
+            wins = today[today['result'] == 'W']
+            losses = today[today['result'] == 'L']
+            
+            print(f"\n✅ WINS ({len(wins)}):")
+            for _, row in wins.iterrows():
+                print(f"   {row['player_name']}: {row['actual_pra']:.1f} PRA (needed {row['recommended_minimum']:.1f})")
+            
+            print(f"\n❌ LOSSES ({len(losses)}):")
+            for _, row in losses.iterrows():
+                print(f"   {row['player_name']}: {row['actual_pra']:.1f} PRA (needed {row['recommended_minimum']:.1f})")
+            
+            print(f"\nTODAY: {len(wins)}-{len(losses)} ({100*len(wins)/(len(wins)+len(losses)):.1f}%)")
+        except Exception as e:
+            pass
+        
+        print("=" * 60)
         logger.info(f"\n✓ Auto-marked {marked_count} predictions")
         self.tracker.show_record()
     def process_yesterday(self):

@@ -57,6 +57,12 @@ class ResultsTracker:
             print(f"No prediction found for {player_name}")
             return
         
+        # Check if already marked (prevent duplicates)
+        if not df.empty:
+            already_marked = df[(df['player_name'] == player_name) & (df['date'] == date)]
+            if not already_marked.empty:
+                return  # Already marked, skip
+        
         pred = pred.iloc[0]
         
         # Add result
@@ -125,7 +131,8 @@ class ResultsTracker:
         print("OVERALL RECORD")
         print("=" * 60)
         print(f"Record: {record['wins']}-{record['losses']}")
-        print(f"Win Rate: {record['win_percentage']:.1f}%")
+        win_pct = record.get('win_percentage', 100*record['wins']/(record['wins']+record['losses']) if record['wins']+record['losses'] > 0 else 0)
+        print(f"Win Rate: {win_pct:.1f}%")
         print("=" * 60)
         
         return record
