@@ -3,6 +3,7 @@
 Incremental Player Consistency Backtest
 - Only fetches NEW games since last run
 - Saves progress after each game
+- REMOVES DUPLICATES (same player, same game)
 - Much faster for weekly updates
 """
 
@@ -73,7 +74,7 @@ def load_existing_results():
     """Load existing player performance data"""
     try:
         df = pd.read_csv(CACHE_FILE)
-        print(f"Loaded {len(df)} existing player performances")
+        print(f"Loaded {len(df)} existing player performances (may include duplicates)")
         return df
     except FileNotFoundError:
         return pd.DataFrame()
@@ -109,7 +110,7 @@ def fetch_new_games(new_game_ids):
         player_df = get_box_score(game_id)
         
         if player_df is None or player_df.empty:
-            save_processed_game(game_id)  # Mark as processed even if empty
+            save_processed_game(game_id)
             continue
         
         for _, row in player_df.iterrows():
@@ -135,7 +136,6 @@ def fetch_new_games(new_game_ids):
             except Exception:
                 continue
         
-        # Mark game as processed immediately (saves progress)
         save_processed_game(game_id)
     
     print(f"\n✓ Fetched {len(new_results)} player performances from {len(new_game_ids)} new games")
@@ -144,6 +144,15 @@ def fetch_new_games(new_game_ids):
 
 def calculate_player_records(results_df, averages):
     """Calculate win/loss record for each player"""
+    
+    # CRITICAL FIX: Remove duplicates (same player + same game)
+    print("\nRemoving duplicate game entries...")
+    original_count = len(results_df)
+    results_df = results_df.drop_duplicates(subset=['game_id', 'player_name'], keep='first')
+    deduped_count = len(results_df)
+    print(f"  Removed {original_count - deduped_count} duplicates")
+    print(f"  Clean records: {deduped_count}")
+    
     player_records = {}
     
     for player_name, avg_pra in averages.items():
@@ -224,9 +233,9 @@ def run_incremental_backtest():
             else:
                 results_df = new_df
             
-            # Save combined results
+            # Save combined results (still may have duplicates from previous runs)
             save_results(results_df)
-            print(f"✓ Total: {len(results_df)} player performances saved")
+            print(f"✓ Total: {len(results_df)} player performances saved (may include duplicates)")
         else:
             results_df = existing_df
     
@@ -234,7 +243,7 @@ def run_incremental_backtest():
         print("No game data available!")
         return
     
-    # Load averages and calculate records
+    # Load averages and calculate records (deduplication happens here)
     averages = load_player_averages()
     print(f"\nCalculating consistency for {len(averages)} players...")
     
