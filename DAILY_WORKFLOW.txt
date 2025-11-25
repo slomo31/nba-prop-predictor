@@ -26,6 +26,8 @@ PORT=5001 python dashboard.py
 git add .
 git commit -m "Daily predictions update"
 git push origin main
+# update all
+git add . && git commit -m "Update" && git push origin main
 
 
 # ------------------------------------------------------------
@@ -33,7 +35,7 @@ git push origin main
 # ------------------------------------------------------------
 
 # Check results from yesterday's games
-python game_results_scraper.py
+python game_results_scraper.py date 2025-11-24
 
 # This will:
 # - Scrape actual PRA from Basketball Reference

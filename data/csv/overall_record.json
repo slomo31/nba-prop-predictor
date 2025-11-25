@@ -1,1 +1,7 @@
-{"wins": 98, "losses": 36, "win_percentage": 73.13432835820896}
+{
+  "wins": 155,
+  "losses": 60,
+  "total": 215,
+  "win_percentage": 72.1,
+  "last_updated": "2025-11-25T08:21:32.507448"
+}
